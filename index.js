@@ -28,33 +28,31 @@ floorCollisions2D.forEach((row, y) => {
                     },
                 })
             );
-        }
-        else if (symbol === 2) {
+        } else if (symbol === 2) {
             collisionBlocks.push(
-                new CollisionBlock({
+                new SlantBlock({
                     position: {
                         x: x * 32,
                         y: y * 32,
-                        type: 'rightRamp',
-                        slope: 1,
-                    }
+                    },
+                    type: 'rightRamp',
+                    slope: 1,
                 })
-            )
-        }
-
-        else if (symbol === 3) {
+            );
+        } else if (symbol === 3) {
             collisionBlocks.push(
-                new CollisionBlock({
-                position: {
-                    x: x * 32,
-                    y: y * 32,
+                new SlantBlock({
+                    position: {
+                        x: x * 32,
+                        y: y * 32,
+                    },
                     type: 'leftRamp',
                     slope: -1,
-                }
-            })
-        )}
-    })
-})
+                })
+            );
+        }
+    });
+});
 
 const gravity = .05
 
@@ -190,8 +188,8 @@ function animate() {
 
     ctx.restore()
 
-    collisionBlocks.forEach((collisionBlock) => {
-        collisionBlock.update()
+    collisionBlocks.forEach((CollisionBlock) => {
+        CollisionBlock.update(camera);
     })
 
     
@@ -223,3 +221,56 @@ window.addEventListener('keyup', (event) => {
             break
     }
 })
+
+// Select the buttons
+const leftButton = document.getElementById('left-button');
+const rightButton = document.getElementById('right-button');
+const jumpButton = document.getElementById('jump-button');
+
+// Variables to track player movement
+let isMovingLeft = false;
+let isMovingRight = false;
+
+// Add touchstart and touchend listeners for the left button
+leftButton.addEventListener('touchstart', () => {
+    isMovingLeft = true;
+    player1.velocity.x = -5; // Adjust speed as needed
+});
+
+leftButton.addEventListener('touchend', () => {
+    isMovingLeft = false;
+    if (!isMovingRight) player1.velocity.x = 0; // Stop movement if not moving right
+});
+
+// Add touchstart and touchend listeners for the right button
+rightButton.addEventListener('touchstart', () => {
+    isMovingRight = true;
+    player1.velocity.x = 5; // Adjust speed as needed
+});
+
+rightButton.addEventListener('touchend', () => {
+    isMovingRight = false;
+    if (!isMovingLeft) player1.velocity.x = 0; // Stop movement if not moving left
+});
+
+// Add touchstart listener for the jump button
+jumpButton.addEventListener('touchstart', () => {
+    if (player1.velocity.y === 0) {
+        player1.velocity.y = -10; // Adjust jump strength as needed
+    }
+});
+
+function gameLoop() {
+    // Update player position based on velocity
+    player.position.x += player.velocity.x;
+    player.position.y += player.velocity.y;
+
+    // Apply gravity or other game logic
+    player.applyGravity();
+
+    // Render the game
+    player.update();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
