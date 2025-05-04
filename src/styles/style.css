@@ -1,3 +1,66 @@
 body {
     background-color: black;
+    margin: 0; /* Remove default margin */
+    overflow: hidden; /* Prevent scrolling */
+    position: relative; /* Ensure child elements like #touch-controls are positioned relative to the body */
+}
+
+canvas {
+    display: block;
+    margin: auto;
+    width: 80vw; /* Full width of the viewport */
+    height: 80vh; /* Full height of the viewport */
+    object-fit: contain; /* Maintain aspect ratio */
+    z-index: 1; /* Ensure canvas is below the controls */
+}
+
+#touch-controls {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Span the full width of the canvas */
+    height: 100%; /* Span the full height of the canvas */
+    pointer-events: none; /* Allow clicks to pass through except on buttons */
+}
+
+#left-right-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20vw;
+    display: flex;
+    flex-direction: row; /* Stack buttons vertically */
+    gap: 10px;
+    pointer-events: auto; /* Enable interaction with buttons */
+}
+
+#jump-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20vw;
+    pointer-events: auto; /* Enable interaction with the button */
+}
+
+#touch-controls button {
+    background-color: #444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    pointer-events: auto; /* Ensure buttons are clickable */
+}
+
+#toggle-controls-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3; /* Ensure it appears above other elements */
+    background-color: #444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
 }

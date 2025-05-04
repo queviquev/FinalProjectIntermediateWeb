@@ -1,11 +1,10 @@
-class Player 
-extends Sprite {
+class Player extends Sprite {
     constructor({ position, collisionBlocks, imageSrc, frameRate, scale = 1, animations }) {
         super({ imageSrc, frameRate, scale });
         this.position = position;
         this.velocity = {
             x: 0,
-            y: 1,
+            y: 0,
         };
 
         this.collisionBlocks = collisionBlocks;
@@ -56,6 +55,7 @@ extends Sprite {
         }
     }
 
+
     shouldPanCameraToLeft({canvas, camera}) {
         const cameraboxRightSide = this.camerabox.position.x + this.camerabox.width
         const scaledDownCanvasWidth = canvas.width
@@ -103,10 +103,42 @@ extends Sprite {
 
         this.position.x += this.velocity.x;
         this.updateHitbox();
+                
+
+
         this.checkForHorizontalCollision();
+        this.updateHitbox();
+        this.checkRampCollision();
+        this.updateHitbox();
+        
         this.applyGravity();
         this.updateHitbox();
         this.checkForVerticalCollision();
+
+        // Visualize player's hitbox
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.fillRect(this.hitbox.position.x, this.hitbox.position.y, this.hitbox.width, this.hitbox.height);
+
+        // Visualize ramps
+        this.collisionBlocks.forEach((block) => {
+            if (block instanceof SlantBlock) {
+                ctx.fillStyle = block.type === 'rightRamp' ? 'rgba(0, 255, 0, 0.5)' : 'rgba(0, 0, 255, 0.5)';
+                ctx.beginPath();
+
+                if (block.type === 'rightRamp') {
+                    ctx.moveTo(block.position.x, block.position.y + block.height);
+                    ctx.lineTo(block.position.x + block.width, block.position.y + block.height);
+                    ctx.lineTo(block.position.x + block.width, block.position.y);
+                } else if (block.type === 'leftRamp') {
+                    ctx.moveTo(block.position.x, block.position.y + block.height);
+                    ctx.lineTo(block.position.x, block.position.y);
+                    ctx.lineTo(block.position.x + block.width, block.position.y + block.height);
+                }
+
+                ctx.closePath();
+                ctx.fill();
+            }
+        });
     }
 
     updateFrames() {
@@ -128,10 +160,10 @@ extends Sprite {
         this.hitbox = {
             position: {
                 x: this.position.x + 24, // Adjust based on sprite dimensions
-                y: this.position.y + 8, // Adjust based on sprite dimensions
+                y: this.position.y + 14,  // Adjust based on sprite dimensions
             },
             width: 16, // Width of the hitbox
-            height: 40, // Height of the hitbox
+            height: 33, // Height of the hitbox
         };
     }
 
@@ -199,6 +231,33 @@ extends Sprite {
         }
     }
 
+    checkRampCollision() {
+        this.collisionBlocks.forEach((block) => {
+            if (block instanceof SlantBlock) {
+                const withinXBounds = this.hitbox.position.x + this.hitbox.width > block.position.x &&
+                                      this.hitbox.position.x < block.position.x + block.width;
+                const withinYBounds = this.hitbox.position.y + this.hitbox.height > block.position.y &&
+                                      this.hitbox.position.y < block.position.y + block.height;
+
+                if (withinXBounds && withinYBounds) {
+                    const relativeX = this.hitbox.position.x - block.position.x;
+                    const rampHeight = block.slope * relativeX;
+
+                    const targetY = block.position.y + block.height - rampHeight - this.hitbox.height;
+
+                    if (this.velocity.y >= 0) {
+                        // Adjust the player's position to align with the ramp
+                        this.position.y = targetY - (this.hitbox.position.y - this.position.y);
+                        this.velocity.y = 0;
+
+                        // Recalculate the hitbox position after adjusting the player's position
+                        this.updateHitbox();
+                    }
+                }
+            }
+        });
+    }
+
     draw() {
         ctx.save();
 
@@ -218,7 +277,7 @@ extends Sprite {
         } else {
             ctx.drawImage(
                 this.image,
-                this.currentFrame * (this.image.width / this.frameRate), // Source X (current frame)
+                this.currentFrame * (this.image.width / this.frameRate), 
                 0, // Source Y
                 this.image.width / this.frameRate, // Source width (frame width)
                 this.image.height, // Source height
@@ -241,4 +300,38 @@ function collision({ object1, object2 }) {
         object1.position.y + object1.height > object2.position.y
     );
 }
+
+document.getElementById('left-button').addEventListener('touchstart', () => {
+    player.velocity.x = -5; // Move left
+});
+
+document.getElementById('left-button').addEventListener('touchend', () => {
+    player.velocity.x = 0; // Stop moving
+});
+
+document.getElementById('right-button').addEventListener('touchstart', () => {
+    player.velocity.x = 5; // Move right
+});
+
+document.getElementById('right-button').addEventListener('touchend', () => {
+    player.velocity.x = 0; // Stop moving
+});
+
+document.getElementById('jump-button').addEventListener('touchstart', () => {
+    if (player.velocity.y === 0) {
+        player.velocity.y = -10; // Jump
+    }
+});
+
+const touchControls = document.getElementById('touch-controls');
+const toggleButton = document.getElementById('toggle-controls-button');
+
+// Initially show the controls
+let controlsVisible = true;
+
+toggleButton.addEventListener('click', () => {
+    controlsVisible = !controlsVisible; // Toggle the visibility state
+    touchControls.style.display = controlsVisible ? 'block' : 'none'; // Show or hide the controls
+    toggleButton.textContent = controlsVisible ? 'Hide Touch Controls' : 'Show Touch Controls'; // Update button text
+});
 
