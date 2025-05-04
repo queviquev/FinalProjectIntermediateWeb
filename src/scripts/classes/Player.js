@@ -116,29 +116,29 @@ class Player extends Sprite {
         this.checkForVerticalCollision();
 
         // Visualize player's hitbox
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-        ctx.fillRect(this.hitbox.position.x, this.hitbox.position.y, this.hitbox.width, this.hitbox.height);
+        // ctx.fillStyle = 'rgba(255, 0, 0, 0.16)';
+        // ctx.fillRect(this.hitbox.position.x, this.hitbox.position.y, this.hitbox.width, this.hitbox.height);
 
         // Visualize ramps
-        this.collisionBlocks.forEach((block) => {
-            if (block instanceof SlantBlock) {
-                ctx.fillStyle = block.type === 'rightRamp' ? 'rgba(0, 255, 0, 0.5)' : 'rgba(0, 0, 255, 0.5)';
-                ctx.beginPath();
+        // this.collisionBlocks.forEach((block) => {
+        //     if (block instanceof SlantBlock) {
+        //         ctx.fillStyle = block.type === 'rightRamp' ? 'rgba(0, 255, 0, 0.5)' : 'rgba(0, 0, 255, 0.5)';
+        //         ctx.beginPath();
 
-                if (block.type === 'rightRamp') {
-                    ctx.moveTo(block.position.x, block.position.y + block.height);
-                    ctx.lineTo(block.position.x + block.width, block.position.y + block.height);
-                    ctx.lineTo(block.position.x + block.width, block.position.y);
-                } else if (block.type === 'leftRamp') {
-                    ctx.moveTo(block.position.x, block.position.y + block.height);
-                    ctx.lineTo(block.position.x, block.position.y);
-                    ctx.lineTo(block.position.x + block.width, block.position.y + block.height);
-                }
+        //         if (block.type === 'rightRamp') {
+        //             ctx.moveTo(block.position.x, block.position.y + block.height);
+        //             ctx.lineTo(block.position.x + block.width, block.position.y + block.height);
+        //             ctx.lineTo(block.position.x + block.width, block.position.y);
+        //         } else if (block.type === 'leftRamp') {
+        //             ctx.moveTo(block.position.x, block.position.y + block.height);
+        //             ctx.lineTo(block.position.x, block.position.y);
+        //             ctx.lineTo(block.position.x + block.width, block.position.y + block.height);
+        //         }
 
-                ctx.closePath();
-                ctx.fill();
-            }
-        });
+        //         ctx.closePath();
+        //         ctx.fill();
+        //     }
+        // });
     }
 
     updateFrames() {
@@ -274,7 +274,8 @@ class Player extends Sprite {
                 this.width, // Destination width
                 this.height // Destination height
             );
-        } else {
+        } 
+        else {
             ctx.drawImage(
                 this.image,
                 this.currentFrame * (this.image.width / this.frameRate), 
@@ -327,11 +328,4 @@ const touchControls = document.getElementById('touch-controls');
 const toggleButton = document.getElementById('toggle-controls-button');
 
 // Initially show the controls
-let controlsVisible = true;
-
-toggleButton.addEventListener('click', () => {
-    controlsVisible = !controlsVisible; // Toggle the visibility state
-    touchControls.style.display = controlsVisible ? 'block' : 'none'; // Show or hide the controls
-    toggleButton.textContent = controlsVisible ? 'Hide Touch Controls' : 'Show Touch Controls'; // Update button text
-});
 

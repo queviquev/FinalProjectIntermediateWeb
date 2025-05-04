@@ -111,6 +111,14 @@ const player1 = new Player({
     }
 })
 
+let controlsVisible = false; // Start with touch controls hidden
+
+toggleButton.addEventListener('click', () => {
+    controlsVisible = !controlsVisible; // Toggle the visibility state
+    touchControls.style.display = controlsVisible ? 'block' : 'none'; // Show or hide the controls
+    toggleButton.textContent = controlsVisible ? 'Hide Touch Controls' : 'Show Touch Controls'; // Update button text
+});
+
 const keys = {
     d: {
         pressed: false
@@ -122,6 +130,15 @@ const keys = {
         pressed: false
     }
 }
+
+// Select the buttons
+const leftButton = document.getElementById('left-button');
+const rightButton = document.getElementById('right-button');
+const jumpButton = document.getElementById('jump-button');
+
+// Variables to track player movement
+let isMovingLeft = false;
+let isMovingRight = false;
 
 const background = new Sprite({
     position: {
@@ -154,13 +171,13 @@ function animate() {
     player1.update()
 
     player1.velocity.x = 0
-    if(keys.d.pressed) {
+    if(keys.d.pressed || isMovingRight) {
         player1.swapSprite('Run')
         player1.velocity.x = 1
         player1.lastDirection = 'right'
         player1.shouldPanCameraToLeft({ canvas, camera })
     }
-    else if(keys.a.pressed) {
+    else if(keys.a.pressed || isMovingLeft) {
         player1.lastDirection = 'left'
         player1.swapSprite('RunLeft')
         player1.velocity.x = -1
@@ -222,15 +239,6 @@ window.addEventListener('keyup', (event) => {
     }
 })
 
-// Select the buttons
-const leftButton = document.getElementById('left-button');
-const rightButton = document.getElementById('right-button');
-const jumpButton = document.getElementById('jump-button');
-
-// Variables to track player movement
-let isMovingLeft = false;
-let isMovingRight = false;
-
 // Add touchstart and touchend listeners for the left button
 leftButton.addEventListener('touchstart', () => {
     isMovingLeft = true;
@@ -259,18 +267,3 @@ jumpButton.addEventListener('touchstart', () => {
         player1.velocity.y = -10; // Adjust jump strength as needed
     }
 });
-
-function gameLoop() {
-    // Update player position based on velocity
-    player.position.x += player.velocity.x;
-    player.position.y += player.velocity.y;
-
-    // Apply gravity or other game logic
-    player.applyGravity();
-
-    // Render the game
-    player.update();
-    requestAnimationFrame(gameLoop);
-}
-
-gameLoop();

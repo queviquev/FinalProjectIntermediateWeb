@@ -15,6 +15,7 @@ canvas {
 }
 
 #touch-controls {
+    display: none; /* Initially hidden */
     position: absolute;
     top: 0;
     left: 0;
