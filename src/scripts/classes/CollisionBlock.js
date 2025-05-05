@@ -9,7 +9,7 @@ class CollisionBlock {
     draw(camera) {
         if (this.slope === 0) {
             // Flat block
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+            ctx.fillStyle = 'rgba(255, 0, 0, 0)';
             ctx.fillRect(
                 this.position.x + camera.position.x,
                 this.position.y + camera.position.y,
