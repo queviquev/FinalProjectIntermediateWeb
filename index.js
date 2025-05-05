@@ -1,8 +1,8 @@
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 
-canvas.width = 576,
-canvas.height = 420
+canvas.width = 450,
+canvas.height = 360
 
 const scaledCanvas = {
     width: canvas.width,
@@ -10,10 +10,20 @@ const scaledCanvas = {
 }
 
 const floorCollisions2D = []
+const platformCollisions2D = []
+const slantCollisions2D = []
 
 // break down the collision blocks into a 2d array
 for (let i = 0; i < floorCollisions.length; i += 32) {
     floorCollisions2D.push(floorCollisions.slice(i, i + 32));
+}
+
+for(let i = 0; i < floorCollisions.length; i += 32) {
+    platformCollisions2D.push(floorCollisions.slice(i, i + 32));
+}
+
+for(let i = 0; i < floorCollisions.length; i += 32) {
+    slantCollisions2D.push(floorCollisions.slice(i, i + 32));
 }
 
 const collisionBlocks = []
@@ -28,31 +38,79 @@ floorCollisions2D.forEach((row, y) => {
                     },
                 })
             );
-        } else if (symbol === 2) {
-            collisionBlocks.push(
-                new SlantBlock({
+        }
+    });
+});
+
+
+const platformCollisionBlocks = []
+platformCollisions2D.forEach((row, y) => {
+    row.forEach((symbol, x) => {
+        if (symbol === 20 || symbol === 21 || symbol === 22) {
+            platformCollisionBlocks.push(
+                new CollisionBlock({
                     position: {
                         x: x * 32,
                         y: y * 32,
                     },
-                    type: 'rightRamp',
-                    slope: 1,
-                })
-            );
-        } else if (symbol === 3) {
-            collisionBlocks.push(
-                new SlantBlock({
-                    position: {
-                        x: x * 32,
-                        y: y * 32,
-                    },
-                    type: 'leftRamp',
-                    slope: -1,
+                    height: 8,     
                 })
             );
         }
     });
-});
+})
+
+const slantCollisionBlocks = []
+slantCollisions2D.forEach((row, y) => {
+    row.forEach((symbol, x) => {
+        if (symbol === 6) {
+            slantCollisionBlocks.push(
+                new CollisionBlock({
+                    position: {
+                        x: x * 32,
+                        y: y * 32,
+                    },
+                    height: 32,
+                    slope: .5,
+                })
+            );
+        }
+        else if (symbol === 7) {
+            slantCollisionBlocks.push(
+                new CollisionBlock({
+                    position: {
+                        x: x * 32,
+                        y: (y * 32) + 16,
+                    },
+                    height: 16,
+                    slope: 0.5,
+                })
+            );
+        }
+        else if (symbol === 3) {
+            slantCollisionBlocks.push(
+                new CollisionBlock({
+                    position: {
+                        x: x * 32,
+                        y: y * 32,
+                    },
+                    slope: -1,
+                })
+            )
+        }
+        else if (symbol === 2) {
+            slantCollisionBlocks.push(
+                new CollisionBlock({
+                    position: {
+                        x: x * 32,
+                        y: y * 32,
+                    },
+                    slope: 1,
+                })
+            )
+        }
+    });
+})
 
 const gravity = .05
 
@@ -62,7 +120,9 @@ const player1 = new Player({
         x: 100,
         y: 0,
     },
-    collisionBlocks, 
+    collisionBlocks,
+    platformCollisionBlocks,
+    slantCollisionBlocks,
     imageSrc: 'src/imgs/mainChar/Idle.png',
     frameRate: 4,
     animations: {
@@ -203,13 +263,23 @@ function animate() {
         player1.swapSprite('Fall')
     }
 
+
     ctx.restore()
 
     collisionBlocks.forEach((CollisionBlock) => {
         CollisionBlock.update(camera);
     })
-
+    platformCollisionBlocks.forEach((CollisionBlock) => {
+        CollisionBlock.update(camera);
+    })
     
+    slantCollisionBlocks.forEach((block) => {
+        if (player1.isCollidingWith(block)) {
+            if (block.slope !== 0) {
+                player1.handleSlopeCollision(block);
+            }
+        }
+    });    
 }
 
 animate()
@@ -264,6 +334,6 @@ rightButton.addEventListener('touchend', () => {
 // Add touchstart listener for the jump button
 jumpButton.addEventListener('touchstart', () => {
     if (player1.velocity.y === 0) {
-        player1.velocity.y = -10; // Adjust jump strength as needed
+        player1.velocity.y = -2.13; // Adjust jump strength as needed
     }
 });

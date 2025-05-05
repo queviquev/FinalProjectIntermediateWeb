@@ -1,5 +1,5 @@
 class Player extends Sprite {
-    constructor({ position, collisionBlocks, imageSrc, frameRate, scale = 1, animations }) {
+    constructor({ position, collisionBlocks, platformCollisionBlocks, slantCollisionBlocks, imageSrc, frameRate, scale = 1, animations }) {
         super({ imageSrc, frameRate, scale });
         this.position = position;
         this.velocity = {
@@ -7,7 +7,9 @@ class Player extends Sprite {
             y: 0,
         };
 
-        this.collisionBlocks = collisionBlocks;
+        this.collisionBlocks = collisionBlocks
+        this.platformCollisionBlocks = platformCollisionBlocks
+        this.slantCollisionBlocks = slantCollisionBlocks
         this.hitbox = {
             position: {
                 x: this.position.x,
@@ -31,7 +33,7 @@ class Player extends Sprite {
 
     swapSprite(key) {
         if (this.image === this.animations[key].image || !this.animations[key]) return;
-
+        this.currentAnimation = 0;
         this.image = this.animations[key].image;
         this.frameBuffer = this.animations[key].frameBuffer;
         this.frameRate = this.animations[key].frameRate;
@@ -91,54 +93,15 @@ class Player extends Sprite {
         this.updateFrames();
         this.updateHitbox();
         this.updateCamerabox();
-        
-        // for testing camerabox and hitbox
-        // ctx.fillStyle = 'rgba(0, 255, 0, .2)';
-        // ctx.fillRect(this.camerabox.position.x, this.camerabox.position.y, this.camerabox.width, this.camerabox.height);
-        // ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
-        // ctx.fillStyle = 'rgba(0, 0, 255, .2)';
-        
-        
         this.draw();
-
         this.position.x += this.velocity.x;
         this.updateHitbox();
-                
-
-
         this.checkForHorizontalCollision();
         this.updateHitbox();
-        this.checkRampCollision();
         this.updateHitbox();
-        
         this.applyGravity();
         this.updateHitbox();
         this.checkForVerticalCollision();
-
-        // Visualize player's hitbox
-        // ctx.fillStyle = 'rgba(255, 0, 0, 0.16)';
-        // ctx.fillRect(this.hitbox.position.x, this.hitbox.position.y, this.hitbox.width, this.hitbox.height);
-
-        // Visualize ramps
-        // this.collisionBlocks.forEach((block) => {
-        //     if (block instanceof SlantBlock) {
-        //         ctx.fillStyle = block.type === 'rightRamp' ? 'rgba(0, 255, 0, 0.5)' : 'rgba(0, 0, 255, 0.5)';
-        //         ctx.beginPath();
-
-        //         if (block.type === 'rightRamp') {
-        //             ctx.moveTo(block.position.x, block.position.y + block.height);
-        //             ctx.lineTo(block.position.x + block.width, block.position.y + block.height);
-        //             ctx.lineTo(block.position.x + block.width, block.position.y);
-        //         } else if (block.type === 'leftRamp') {
-        //             ctx.moveTo(block.position.x, block.position.y + block.height);
-        //             ctx.lineTo(block.position.x, block.position.y);
-        //             ctx.lineTo(block.position.x + block.width, block.position.y + block.height);
-        //         }
-
-        //         ctx.closePath();
-        //         ctx.fill();
-        //     }
-        // });
     }
 
     updateFrames() {
@@ -151,7 +114,7 @@ class Player extends Sprite {
 
             this.currentFrame++;
             if (this.currentFrame >= this.frameRate) {
-                this.currentFrame = 0; // Loop back to the first frame
+                this.currentFrame = 0;
             }
         }
     }
@@ -229,33 +192,60 @@ class Player extends Sprite {
                 }
             }
         }
-    }
 
-    checkRampCollision() {
-        this.collisionBlocks.forEach((block) => {
-            if (block instanceof SlantBlock) {
-                const withinXBounds = this.hitbox.position.x + this.hitbox.width > block.position.x &&
-                                      this.hitbox.position.x < block.position.x + block.width;
-                const withinYBounds = this.hitbox.position.y + this.hitbox.height > block.position.y &&
-                                      this.hitbox.position.y < block.position.y + block.height;
+        // for platform collision
+        for (let i = 0; i < this.platformCollisionBlocks.length; i++) {
+            const platformCollisionBlock = this.platformCollisionBlocks[i];
+            if (
+                platformCollision({
+                    object1: this.hitbox,
+                    object2: platformCollisionBlock,
+                })
+            ) {
+                if (this.velocity.y > 0) {
+                    // Player is falling
+                    this.velocity.y = 0;
 
-                if (withinXBounds && withinYBounds) {
-                    const relativeX = this.hitbox.position.x - block.position.x;
-                    const rampHeight = block.slope * relativeX;
-
-                    const targetY = block.position.y + block.height - rampHeight - this.hitbox.height;
-
-                    if (this.velocity.y >= 0) {
-                        // Adjust the player's position to align with the ramp
-                        this.position.y = targetY - (this.hitbox.position.y - this.position.y);
-                        this.velocity.y = 0;
-
-                        // Recalculate the hitbox position after adjusting the player's position
-                        this.updateHitbox();
-                    }
+                    // Adjust the player's position to sit on top of the block
+                    const offset = this.hitbox.position.y - this.position.y + this.hitbox.height;
+                    this.position.y = platformCollisionBlock.position.y - offset - 0.01;
+                    break;
                 }
             }
-        });
+        }
+    }
+
+    handleSlopeCollision(collisionBlock) {
+        const relativeX = this.position.x - collisionBlock.position.x;
+
+        // Calculate the player's Y position based on the slope
+        const slopeHeight = collisionBlock.slope > 0
+            ? relativeX * (collisionBlock.height / collisionBlock.width) // Right slope
+            : (collisionBlock.height - (relativeX * (collisionBlock.height / collisionBlock.width))); // Left slope
+
+        const slopeY = collisionBlock.position.y + slopeHeight;
+
+        // Check if the player is above the slope
+        if (this.position.y + this.height > slopeY) {
+            this.position.y = slopeY - this.height; // Adjust player's Y position
+            this.velocity.y = 0; // Stop vertical movement
+        }
+
+        // Horizontal collision: Prevent the player from moving into the slope
+        if (collisionBlock.slope > 0 && this.position.x + this.width > collisionBlock.position.x + collisionBlock.width) {
+            this.position.x = collisionBlock.position.x + collisionBlock.width - this.width; // Push player back
+        } else if (collisionBlock.slope < 0 && this.position.x < collisionBlock.position.x) {
+            this.position.x = collisionBlock.position.x; // Push player back
+        }
+    }
+
+    isCollidingWith(block) {
+        return (
+            this.position.x + this.width > block.position.x &&
+            this.position.x < block.position.x + block.width &&
+            this.position.y + this.height > block.position.y &&
+            this.position.y < block.position.y + block.height
+        );
     }
 
     draw() {
@@ -302,30 +292,5 @@ function collision({ object1, object2 }) {
     );
 }
 
-document.getElementById('left-button').addEventListener('touchstart', () => {
-    player.velocity.x = -5; // Move left
-});
-
-document.getElementById('left-button').addEventListener('touchend', () => {
-    player.velocity.x = 0; // Stop moving
-});
-
-document.getElementById('right-button').addEventListener('touchstart', () => {
-    player.velocity.x = 5; // Move right
-});
-
-document.getElementById('right-button').addEventListener('touchend', () => {
-    player.velocity.x = 0; // Stop moving
-});
-
-document.getElementById('jump-button').addEventListener('touchstart', () => {
-    if (player.velocity.y === 0) {
-        player.velocity.y = -10; // Jump
-    }
-});
-
 const touchControls = document.getElementById('touch-controls');
 const toggleButton = document.getElementById('toggle-controls-button');
-
-// Initially show the controls
-

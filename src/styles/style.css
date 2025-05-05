@@ -50,6 +50,7 @@ canvas {
     cursor: pointer;
     font-size: 16px;
     pointer-events: auto; /* Ensure buttons are clickable */
+    user-select: none; /* Prevent text selection */
 }
 
 #toggle-controls-button {
