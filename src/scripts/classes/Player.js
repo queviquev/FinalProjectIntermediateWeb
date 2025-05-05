@@ -27,8 +27,6 @@ class Player extends Sprite {
             image.src = this.animations[key].imageSrc;
             this.animations[key].image = image;
         }
-
-
     }
 
     swapSprite(key) {
@@ -154,6 +152,32 @@ class Player extends Sprite {
                 }
             }
         }
+
+        // Handle slope collisions during horizontal movement
+        for (let i = 0; i < this.slantCollisionBlocks.length; i++) {
+            const slantCollisionBlock = this.slantCollisionBlocks[i];
+            if (
+                collision({
+                    object1: this.hitbox,
+                    object2: slantCollisionBlock,
+                })
+            ) {
+                const slopeHeight = this.calculateSlopeHeight(slantCollisionBlock, this.hitbox.position.x);
+                const offset = this.hitbox.position.y - this.position.y + this.hitbox.height;
+
+                // Only adjust the player's position if they are above the slope and within its bounds
+                if (
+                    this.position.y + offset > slantCollisionBlock.position.y + slopeHeight &&
+                    this.hitbox.position.x >= slantCollisionBlock.position.x &&
+                    this.hitbox.position.x <= slantCollisionBlock.position.x + slantCollisionBlock.width
+                ) {
+                    // Ensure the player is not walking into the slope from the side
+                    if (this.velocity.y >= 0) {
+                        this.position.y = slantCollisionBlock.position.y + slopeHeight - offset - 0.01;
+                    }
+                }
+            }
+        }
     }
 
     applyGravity() {
@@ -163,6 +187,32 @@ class Player extends Sprite {
     }
 
     checkForVerticalCollision() {
+        for (let i = 0; i < this.slantCollisionBlocks.length; i++) {
+            const slantCollisionBlock = this.slantCollisionBlocks[i];
+            if (
+                collision({
+                    object1: this.hitbox,
+                    object2: slantCollisionBlock,
+                })
+            ) {
+                if (this.velocity.y > 0) {
+                    // Player is falling onto a slope
+                    const slopeHeight = this.calculateSlopeHeight(slantCollisionBlock, this.hitbox.position.x);
+                    const offset = this.hitbox.position.y - this.position.y + this.hitbox.height;
+
+                    // Only adjust the player's position if they are above the slope and within its bounds
+                    if (
+                        this.position.y + offset > slantCollisionBlock.position.y + slopeHeight &&
+                        this.hitbox.position.x >= slantCollisionBlock.position.x &&
+                        this.hitbox.position.x <= slantCollisionBlock.position.x + slantCollisionBlock.width
+                    ) {
+                        this.velocity.y = 0;
+                        this.position.y = slantCollisionBlock.position.y + slopeHeight - offset - 0.01;
+                    }
+                }
+            }
+        }
+
         for (let i = 0; i < this.collisionBlocks.length; i++) {
             const collisionBlock = this.collisionBlocks[i];
             if (
@@ -182,7 +232,7 @@ class Player extends Sprite {
                 }
 
                 if (this.velocity.y < 0) {
-                    // Player is jumping and hits the ceiling
+                    // Player is jumping and hits a ceiling
                     this.velocity.y = 0;
 
                     // Adjust the player's position to stop at the bottom of the block
@@ -215,28 +265,26 @@ class Player extends Sprite {
         }
     }
 
-    handleSlopeCollision(collisionBlock) {
-        const relativeX = this.position.x - collisionBlock.position.x;
+    calculateSlopeHeight(slopeBlock, x) {
+        const slopeWidth = slopeBlock.width;
+        const slopeHeight = slopeBlock.height;
 
-        // Calculate the player's Y position based on the slope
-        const slopeHeight = collisionBlock.slope > 0
-            ? relativeX * (collisionBlock.height / collisionBlock.width) // Right slope
-            : (collisionBlock.height - (relativeX * (collisionBlock.height / collisionBlock.width))); // Left slope
+        // Calculate the relative x position on the slope
+        const relativeX = x - slopeBlock.position.x;
 
-        const slopeY = collisionBlock.position.y + slopeHeight;
+        // Ensure the relativeX is within the slope's bounds
+        if (relativeX < 0 || relativeX > slopeWidth) return 0;
 
-        // Check if the player is above the slope
-        if (this.position.y + this.height > slopeY) {
-            this.position.y = slopeY - this.height; // Adjust player's Y position
-            this.velocity.y = 0; // Stop vertical movement
+        // Determine the height at the relative x position
+        if (slopeBlock.slope > 0) {
+            // Positive slope
+            return (relativeX / slopeWidth) * slopeHeight;
+        } else if (slopeBlock.slope < 0) {
+            // Negative slope
+            return slopeHeight - (relativeX / slopeWidth) * slopeHeight;
         }
 
-        // Horizontal collision: Prevent the player from moving into the slope
-        if (collisionBlock.slope > 0 && this.position.x + this.width > collisionBlock.position.x + collisionBlock.width) {
-            this.position.x = collisionBlock.position.x + collisionBlock.width - this.width; // Push player back
-        } else if (collisionBlock.slope < 0 && this.position.x < collisionBlock.position.x) {
-            this.position.x = collisionBlock.position.x; // Push player back
-        }
+        return 0; // Flat or undefined slope
     }
 
     isCollidingWith(block) {

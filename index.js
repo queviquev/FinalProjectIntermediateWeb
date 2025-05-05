@@ -63,42 +63,7 @@ platformCollisions2D.forEach((row, y) => {
 const slantCollisionBlocks = []
 slantCollisions2D.forEach((row, y) => {
     row.forEach((symbol, x) => {
-        if (symbol === 6) {
-            slantCollisionBlocks.push(
-                new CollisionBlock({
-                    position: {
-                        x: x * 32,
-                        y: y * 32,
-                    },
-                    height: 32,
-                    slope: .5,
-                })
-            );
-        }
-        else if (symbol === 7) {
-            slantCollisionBlocks.push(
-                new CollisionBlock({
-                    position: {
-                        x: x * 32,
-                        y: (y * 32) + 16,
-                    },
-                    height: 16,
-                    slope: 0.5,
-                })
-            );
-        }
-        else if (symbol === 3) {
-            slantCollisionBlocks.push(
-                new CollisionBlock({
-                    position: {
-                        x: x * 32,
-                        y: y * 32,
-                    },
-                    slope: -1,
-                })
-            )
-        }
-        else if (symbol === 2) {
+        if (symbol === 3) {
             slantCollisionBlocks.push(
                 new CollisionBlock({
                     position: {
@@ -109,6 +74,42 @@ slantCollisions2D.forEach((row, y) => {
                 })
             )
         }
+        else if (symbol === 2) {
+            slantCollisionBlocks.push(
+                new CollisionBlock({
+                    position: {
+                        x: x * 32,
+                        y: y * 32,
+                    },
+                    slope: -1,
+                })
+            )
+        }        
+        else if (symbol === 6) {
+            slantCollisionBlocks.push(
+                new CollisionBlock({
+                    position: {
+                        x: x * 32,
+                        y: y * 32,
+                    },
+                    height: 16,
+                    slope: 0.5,
+                })
+            );
+        }
+        else if (symbol === 7) {
+            slantCollisionBlocks.push(
+                new CollisionBlock({
+                    position: {
+                        x: x * 32,
+                        y: y * 32 + 16,
+                    },
+                    height: 16,
+                    slope: 0.5,
+                })
+            );
+        }
+
     });
 })
 
@@ -271,41 +272,40 @@ function animate() {
     })
     platformCollisionBlocks.forEach((CollisionBlock) => {
         CollisionBlock.update(camera);
-    })
-    
-    slantCollisionBlocks.forEach((block) => {
-        if (player1.isCollidingWith(block)) {
-            if (block.slope !== 0) {
-                player1.handleSlopeCollision(block);
-            }
-        }
-    });    
+    })   
 }
 
 animate()
 
 window.addEventListener('keydown', (event) => {
     switch (event.key) {
-        case 'd':
-            keys.d.pressed = true
-            break
-        case 'a':
-            keys.a.pressed = true
-            break
-        case 'w':
-            player1.velocity.y = -2.13
-            break
+        case 'd': // Move right
+        case 'ArrowRight': // Right arrow key
+            keys.d.pressed = true;
+            break;
+        case 'a': // Move left
+        case 'ArrowLeft': // Left arrow key
+            keys.a.pressed = true;
+            break;
+        case 'w': // Jump
+        case 'ArrowUp': // Up arrow key
+            if (player1.velocity.y === 0) {
+                player1.velocity.y = -2.13; // Adjust jump strength as needed
+            }
+            break;
     }
-})
+});
 
 window.addEventListener('keyup', (event) => {
     switch (event.key) {
-        case 'd':
-            keys.d.pressed = false
-            break
-        case 'a':
-            keys.a.pressed = false
-            break
+        case 'd': // Stop moving right
+        case 'ArrowRight': // Right arrow key
+            keys.d.pressed = false;
+            break;
+        case 'a': // Stop moving left
+        case 'ArrowLeft': // Left arrow key
+            keys.a.pressed = false;
+            break;
     }
 })
 
@@ -313,27 +313,27 @@ window.addEventListener('keyup', (event) => {
 leftButton.addEventListener('touchstart', () => {
     isMovingLeft = true;
     player1.velocity.x = -5; // Adjust speed as needed
-});
+}, { passive: true });
 
 leftButton.addEventListener('touchend', () => {
     isMovingLeft = false;
     if (!isMovingRight) player1.velocity.x = 0; // Stop movement if not moving right
-});
+}, { passive: true });
 
 // Add touchstart and touchend listeners for the right button
 rightButton.addEventListener('touchstart', () => {
     isMovingRight = true;
     player1.velocity.x = 5; // Adjust speed as needed
-});
+}, { passive: true });
 
 rightButton.addEventListener('touchend', () => {
     isMovingRight = false;
     if (!isMovingLeft) player1.velocity.x = 0; // Stop movement if not moving left
-});
+}, { passive: true });
 
 // Add touchstart listener for the jump button
 jumpButton.addEventListener('touchstart', () => {
     if (player1.velocity.y === 0) {
         player1.velocity.y = -2.13; // Adjust jump strength as needed
     }
-});
+}, { passive: true });
