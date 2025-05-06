@@ -1,5 +1,5 @@
 class Player extends Sprite {
-    constructor({ position, collisionBlocks, platformCollisionBlocks, slantCollisionBlocks, imageSrc, frameRate, scale = 1, animations }) {
+    constructor({ position, collisionBlocks, platformCollisionBlocks, slantCollisionBlocks, imageSrc, frameRate, scale = 1, animations, jumpCount = 0 }) {
         super({ imageSrc, frameRate, scale });
         this.position = position;
         this.velocity = {
@@ -7,9 +7,10 @@ class Player extends Sprite {
             y: 0,
         };
 
-        this.collisionBlocks = collisionBlocks
-        this.platformCollisionBlocks = platformCollisionBlocks
-        this.slantCollisionBlocks = slantCollisionBlocks
+        this.jumpCount = jumpCount;
+        this.collisionBlocks = collisionBlocks;
+        this.platformCollisionBlocks = platformCollisionBlocks;
+        this.slantCollisionBlocks = slantCollisionBlocks;
         this.hitbox = {
             position: {
                 x: this.position.x,
@@ -19,9 +20,10 @@ class Player extends Sprite {
             height: 10,
         };
 
-        this.animations = animations; // Assign animations to this.animations
-        this.lastDirection = 'right'; // Track the last direction the player was facing
+        this.animations = animations;
+        this.lastDirection = 'right';
 
+        // Load all animations
         for (let key in this.animations) {
             const image = new Image();
             image.src = this.animations[key].imageSrc;
@@ -29,15 +31,17 @@ class Player extends Sprite {
         }
     }
 
+    // method to swap sprites based off of user input
     swapSprite(key) {
         if (this.image === this.animations[key].image || !this.animations[key]) return;
         this.currentAnimation = 0;
         this.image = this.animations[key].image;
         this.frameBuffer = this.animations[key].frameBuffer;
         this.frameRate = this.animations[key].frameRate;
-        this.currentFrame = 0; // Reset to the first frame of the new animation
+        this.currentFrame = 0;
     }
     
+    // method to help pan the camera to the player
     updateCamerabox() {
         this.camerabox = {
             position: {
@@ -46,47 +50,50 @@ class Player extends Sprite {
             },
             width: 420,
             height: 80,
-        }
+        };
     }
 
+    // method to keep the player from walking off the screen
     checkForHorizontalCanvasCollision() {
         if (this.hitbox.position.x + this.hitbox.width + this.velocity.x >= 1024 || this.hitbox.position.x + this.velocity.x <= 0) {
-            this.velocity.x = 0
+            this.velocity.x = 0;
         }
     }
 
-
+    // methods for panning the camera
     shouldPanCameraToLeft({canvas, camera}) {
-        const cameraboxRightSide = this.camerabox.position.x + this.camerabox.width
-        const scaledDownCanvasWidth = canvas.width
+        const cameraboxRightSide = this.camerabox.position.x + this.camerabox.width;
+        const scaledDownCanvasWidth = canvas.width;
         
-        if (cameraboxRightSide >= 1024) return
+        if (cameraboxRightSide >= 1024) return;
 
         if (cameraboxRightSide >= scaledDownCanvasWidth + Math.abs(camera.position.x)) {
-            camera.position.x -= this.velocity.x
+            camera.position.x -= this.velocity.x;
         }
     }
+
     shouldPanCameraToRight({canvas, camera}) {
-        if (this.camerabox.position.x <= 0) return
+        if (this.camerabox.position.x <= 0) return;
 
         if (this.camerabox.position.x <= Math.abs(camera.position.x))
-            camera.position.x -= this.velocity.x
+            camera.position.x -= this.velocity.x;
     }
 
     shouldPanCameraDown({canvas, camera}) {
-        if (this.camerabox.position.y + this.velocity.y <= 0) return
+        if (this.camerabox.position.y + this.velocity.y <= 0) return;
 
         if (this.camerabox.position.y <= Math.abs(camera.position.y))
-            camera.position.y -= this.velocity.y
+            camera.position.y -= this.velocity.y;
     }
 
     shouldPanCameraUp ({canvas, camera}) {
-        if (this.camerabox.position.y + this.camerabox.height  + this.velocity.y >= 576) return
+        if (this.camerabox.position.y + this.camerabox.height  + this.velocity.y >= 576) return;
 
         if (this.camerabox.position.y + this.camerabox.height >= Math.abs(camera.position.y) + canvas.height)
-            camera.position.y -= this.velocity.y
+            camera.position.y -= this.velocity.y;
     }
 
+    // method to check if the player is on the ground or not
     update() {
         this.updateFrames();
         this.updateHitbox();
@@ -102,6 +109,7 @@ class Player extends Sprite {
         this.checkForVerticalCollision();
     }
 
+    // method to update the frames of the sprite
     updateFrames() {
         if (!this.frameBuffer) return;
 
@@ -117,17 +125,19 @@ class Player extends Sprite {
         }
     }
 
+    // method to update the hitbox of the player and check for collisions
     updateHitbox() {
         this.hitbox = {
             position: {
-                x: this.position.x + 24, // Adjust based on sprite dimensions
-                y: this.position.y + 14,  // Adjust based on sprite dimensions
+                x: this.position.x + 24,
+                y: this.position.y + 14,
             },
-            width: 16, // Width of the hitbox
-            height: 33, // Height of the hitbox
+            width: 16,
+            height: 33,
         };
     }
 
+    // method to check for horizontal collisions with the blocks
     checkForHorizontalCollision() {
         for (let i = 0; i < this.collisionBlocks.length; i++) {
             const collisionBlock = this.collisionBlocks[i];
@@ -138,14 +148,12 @@ class Player extends Sprite {
                 })
             ) {
                 if (this.velocity.x > 0) {
-                    // Player is moving right and collides with a block
                     this.velocity.x = 0;
                     this.position.x = collisionBlock.position.x - this.hitbox.width - (this.hitbox.position.x - this.position.x);
                     break;
                 }
 
                 if (this.velocity.x < 0) {
-                    // Player is moving left and collides with a block
                     this.velocity.x = 0;
                     this.position.x = collisionBlock.position.x + collisionBlock.width - (this.hitbox.position.x - this.position.x);
                     break;
@@ -153,7 +161,7 @@ class Player extends Sprite {
             }
         }
 
-        // Handle slope collisions during horizontal movement
+        // check for slopes
         for (let i = 0; i < this.slantCollisionBlocks.length; i++) {
             const slantCollisionBlock = this.slantCollisionBlocks[i];
             if (
@@ -165,13 +173,11 @@ class Player extends Sprite {
                 const slopeHeight = this.calculateSlopeHeight(slantCollisionBlock, this.hitbox.position.x);
                 const offset = this.hitbox.position.y - this.position.y + this.hitbox.height;
 
-                // Only adjust the player's position if they are above the slope and within its bounds
                 if (
                     this.position.y + offset > slantCollisionBlock.position.y + slopeHeight &&
                     this.hitbox.position.x >= slantCollisionBlock.position.x &&
                     this.hitbox.position.x <= slantCollisionBlock.position.x + slantCollisionBlock.width
                 ) {
-                    // Ensure the player is not walking into the slope from the side
                     if (this.velocity.y >= 0) {
                         this.position.y = slantCollisionBlock.position.y + slopeHeight - offset - 0.01;
                     }
@@ -180,12 +186,13 @@ class Player extends Sprite {
         }
     }
 
+    // method to apply gravity to the player
     applyGravity() {
-        this.velocity.y += gravity
-        this.position.y += this.velocity.y
-        
+        this.velocity.y += gravity;
+        this.position.y += this.velocity.y;
     }
 
+    // method to check for ceilings and platforms
     checkForVerticalCollision() {
         for (let i = 0; i < this.slantCollisionBlocks.length; i++) {
             const slantCollisionBlock = this.slantCollisionBlocks[i];
@@ -196,11 +203,9 @@ class Player extends Sprite {
                 })
             ) {
                 if (this.velocity.y > 0) {
-                    // Player is falling onto a slope
                     const slopeHeight = this.calculateSlopeHeight(slantCollisionBlock, this.hitbox.position.x);
                     const offset = this.hitbox.position.y - this.position.y + this.hitbox.height;
 
-                    // Only adjust the player's position if they are above the slope and within its bounds
                     if (
                         this.position.y + offset > slantCollisionBlock.position.y + slopeHeight &&
                         this.hitbox.position.x >= slantCollisionBlock.position.x &&
@@ -222,20 +227,14 @@ class Player extends Sprite {
                 })
             ) {
                 if (this.velocity.y > 0) {
-                    // Player is falling
                     this.velocity.y = 0;
-
-                    // Adjust the player's position to sit on top of the block
                     const offset = this.hitbox.position.y - this.position.y + this.hitbox.height;
                     this.position.y = collisionBlock.position.y - offset - 0.01;
                     break;
                 }
 
                 if (this.velocity.y < 0) {
-                    // Player is jumping and hits a ceiling
                     this.velocity.y = 0;
-
-                    // Adjust the player's position to stop at the bottom of the block
                     const offset = this.hitbox.position.y - this.position.y;
                     this.position.y = collisionBlock.position.y + collisionBlock.height - offset + 0.01;
                     break;
@@ -243,7 +242,6 @@ class Player extends Sprite {
             }
         }
 
-        // for platform collision
         for (let i = 0; i < this.platformCollisionBlocks.length; i++) {
             const platformCollisionBlock = this.platformCollisionBlocks[i];
             if (
@@ -253,10 +251,7 @@ class Player extends Sprite {
                 })
             ) {
                 if (this.velocity.y > 0) {
-                    // Player is falling
                     this.velocity.y = 0;
-
-                    // Adjust the player's position to sit on top of the block
                     const offset = this.hitbox.position.y - this.position.y + this.hitbox.height;
                     this.position.y = platformCollisionBlock.position.y - offset - 0.01;
                     break;
@@ -265,28 +260,24 @@ class Player extends Sprite {
         }
     }
 
+    // method to calculate the slope height to help the player walk up and down slopes
     calculateSlopeHeight(slopeBlock, x) {
         const slopeWidth = slopeBlock.width;
         const slopeHeight = slopeBlock.height;
-
-        // Calculate the relative x position on the slope
         const relativeX = x - slopeBlock.position.x;
 
-        // Ensure the relativeX is within the slope's bounds
         if (relativeX < 0 || relativeX > slopeWidth) return 0;
 
-        // Determine the height at the relative x position
         if (slopeBlock.slope > 0) {
-            // Positive slope
             return (relativeX / slopeWidth) * slopeHeight;
         } else if (slopeBlock.slope < 0) {
-            // Negative slope
             return slopeHeight - (relativeX / slopeWidth) * slopeHeight;
         }
 
-        return 0; // Flat or undefined slope
+        return 0;
     }
 
+    // method to check if the player is colliding with a block
     isCollidingWith(block) {
         return (
             this.position.x + this.width > block.position.x &&
@@ -296,6 +287,7 @@ class Player extends Sprite {
         );
     }
 
+    // method to draw the player on the canvas
     draw() {
         ctx.save();
 
@@ -303,27 +295,27 @@ class Player extends Sprite {
             ctx.scale(-1, 1);
             ctx.drawImage(
                 this.image,
-                this.currentFrame * (this.image.width / this.frameRate), // Source X (current frame)
-                0, // Source Y
-                this.image.width / this.frameRate, // Source width (frame width)
-                this.image.height, // Source height
-                -(this.position.x + this.width), // Adjust for flipped coordinates
-                this.position.y, // Destination Y
-                this.width, // Destination width
-                this.height // Destination height
+                this.currentFrame * (this.image.width / this.frameRate),
+                0,
+                this.image.width / this.frameRate,
+                this.image.height,
+                -(this.position.x + this.width),
+                this.position.y,
+                this.width,
+                this.height
             );
         } 
         else {
             ctx.drawImage(
                 this.image,
-                this.currentFrame * (this.image.width / this.frameRate), 
-                0, // Source Y
-                this.image.width / this.frameRate, // Source width (frame width)
-                this.image.height, // Source height
-                this.position.x, // Destination X
-                this.position.y, // Destination Y
-                this.width, // Destination width
-                this.height // Destination height
+                this.currentFrame * (this.image.width / this.frameRate),
+                0,
+                this.image.width / this.frameRate,
+                this.image.height,
+                this.position.x,
+                this.position.y,
+                this.width,
+                this.height
             );
         }
 
@@ -331,6 +323,7 @@ class Player extends Sprite {
     }
 }
 
+// function to check for collisions between the player and the blocks
 function collision({ object1, object2 }) {
     return (
         object1.position.x < object2.position.x + object2.width &&
@@ -340,5 +333,6 @@ function collision({ object1, object2 }) {
     );
 }
 
+// toggle controls for touchscreens
 const touchControls = document.getElementById('touch-controls');
 const toggleButton = document.getElementById('toggle-controls-button');

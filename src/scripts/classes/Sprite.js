@@ -16,11 +16,11 @@ class Sprite {
         this.elapsedFrames = 0
     }
 
+    // draws the sprite on the canvas
     draw() {
         if (!this.image) {
             return
         }
-
         const cropbox = {
             position: {
                 x: this.currentFrame * (this.image.width / this.frameRate),
